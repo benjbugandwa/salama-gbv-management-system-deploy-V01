@@ -16,4 +16,6 @@ php artisan route:cache || true
 php artisan view:cache || true
 
 # Démarrage (OK pour une V1 de test)
-php -S 0.0.0.0:${PORT:-8080} -t public
+PORT="${PORT:-8080}"
+php artisan serve --host=0.0.0.0 --port="$PORT"
+#php -S 0.0.0.0:${PORT:-8080} -t public
