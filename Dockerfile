@@ -3,12 +3,7 @@ FROM php:8.2-cli AS php
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Run the composer install command with all the specified flags
-RUN composer install \
-    --no-dev \
-    --no-interaction \
-    --prefer-dist \
-    --optimize-autoloader
+
 
 # Libs nécessaires pour GD (jpeg/freetype/png), intl, zip, pgsql…
 RUN apt-get update && apt-get install -y --no-install-recommends \
