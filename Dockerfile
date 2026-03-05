@@ -1,5 +1,5 @@
 # ---- PHP (Debian) ----
-FROM php:8.3-cli AS php
+FROM php:8.2-cli AS php
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git unzip curl ca-certificates \
     libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
-    libzip-dev libicu-dev \
+    libzip-dev libpq-dev libicu-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Extensions PHP requises par ton projet (Spreadsheet/Excel => gd, bcmath)
