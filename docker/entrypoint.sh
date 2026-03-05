@@ -2,6 +2,7 @@
 set -e
 
 cd /app
+php -r "echo getenv('DB_CONNECTION').PHP_EOL; echo getenv('DATABASE_URL').PHP_EOL;"
 
 echo "==> Booting SALAMA…"
 
@@ -25,5 +26,12 @@ php artisan config:cache || true
 php artisan route:cache || true
 php artisan view:cache || true
 
+#PORT="${PORT:-8080}"
+#php artisan serve --host=0.0.0.0 --port="$PORT"
+# Nettoie le port si Railway envoie quelque chose comme "0.0.0.0:8080" ou "tcp://..."
+
 PORT="${PORT:-8080}"
-php artisan serve --host=0.0.0.0 --port="$PORT"
+PORT="$(echo "$PORT" | tr -cd '0-9')"
+if [ -z "$PORT" ]; then PORT=8080; fi
+
+php -S 0.0.0.0:${PORT} -t public
