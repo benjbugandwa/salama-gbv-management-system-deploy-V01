@@ -1,8 +1,17 @@
 #!/usr/bin/env bash
 set -e
 
+cd /app
+
 # Optionnel mais utile en prod
 php artisan optimize:clear || true
+php artisan config:clear || true
+php artisan cache:clear || true
+php artisan route:clear || true
+php artisan view:clear || true
+
+# (B) (optionnel) afficher la connexion détectée (debug)
+php -r "require 'vendor/autoload.php'; \$app=require 'bootstrap/app.php'; \$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap(); echo 'DB_CONNECTION='.(config('database.default')).PHP_EOL;"
 
 # Storage link (ignore si déjà existant)
 php artisan storage:link || true
