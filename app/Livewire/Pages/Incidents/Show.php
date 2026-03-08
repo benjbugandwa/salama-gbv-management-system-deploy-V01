@@ -16,30 +16,6 @@ class Show extends Component
     public string $confirmTitle = '';
     public string $confirmMessage = '';
     public string $confirmAction = ''; // 'validate'
-    // public array $notes = [];
-    public string $incidentId;
-
-    /* public function loadNotes(): void
-    {
-        $this->notes = \App\Models\CaseNote::query()
-            ->where('id_incident', $this->incidentId)
-            ->leftJoin('users', 'case_notes.created_by', '=', 'users.id')
-            ->orderBy('case_notes.created_at', 'asc')
-            ->get([
-                'case_notes.*',
-                \Illuminate\Support\Facades\DB::raw("COALESCE(users.name, '—') as author_name"),
-            ])
-            ->map(fn($n) => [
-                'id' => $n->id,
-                'id_incident' => $n->id_incident,
-                'case_note' => $n->case_note,
-                'is_confidential' => (bool) $n->is_confidential,
-                'file_path' => $n->file_path,
-                'created_at' => $n->created_at,
-                'author_name' => $n->author_name,
-            ])
-            ->toArray();
-    }*/
 
     public function mount(Incident $incident): void
     {
@@ -58,9 +34,6 @@ class Show extends Component
         $this->incident = $incident->load([
             'violences:id,violence_name,categorie_name',
         ]);
-
-        $this->incidentId = $incident->id;
-        $this->loadNotes();
 
         // $this->incident = $incident;
     }
