@@ -18,6 +18,9 @@ php -r "require 'vendor/autoload.php'; \$app=require 'bootstrap/app.php'; \$app-
 # 3) Storage link
 php artisan storage:link || true
 
+mkdir -p storage/app/livewire-tmp
+chmod -R 775 storage bootstrap/cache
+
 # 4) MIGRATIONS D’ABORD
 php artisan migrate --force
 

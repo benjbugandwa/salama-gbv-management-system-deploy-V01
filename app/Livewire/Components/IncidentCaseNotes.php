@@ -299,6 +299,18 @@ class IncidentCaseNotes extends Component
 
         $this->dispatch('toast', message: 'Note modifiée.', type: 'success', duration: 5000);
 
+        $this->loadNotes();
+        $this->showEditModal = false;
+        $this->editing = false;
+        $this->editingId = null;
+        $this->file = null;
+
+        $this->form = [
+            'case_note' => '',
+            'is_confidential' => false,
+            'file_path' => null,
+        ];
+
         $this->closeEditModal();
     }
 
