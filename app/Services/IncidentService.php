@@ -57,7 +57,7 @@ class IncidentService
                 ]
             );
 
-            $this->notifySuperviseursNeedsValidation($incident);
+            // $this->notifySuperviseursNeedsValidation($incident);
 
             return $incident;
         });
