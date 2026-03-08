@@ -25,6 +25,10 @@ Route::get('/', function () {
     return view('landing');
 })->name('landing');
 
+Route::get('/phpinfo', function () {
+    phpinfo();
+});
+
 /*Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');*/
