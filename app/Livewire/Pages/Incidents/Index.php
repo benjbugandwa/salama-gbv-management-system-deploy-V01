@@ -379,43 +379,43 @@ class Index extends Component
             $this->form['code_province'] = $this->user()->code_province;
         }
 
-        try {
-            if ($this->editing && $this->editingId) {
-                $incident = Incident::findOrFail($this->editingId);
+        // try {
+        if ($this->editing && $this->editingId) {
+            $incident = Incident::findOrFail($this->editingId);
 
-                if (!$this->canEditIncident($incident)) {
-                    throw new BusinessRuleException("Modification refusée (incident verrouillé ou rôle).");
-                }
-
-                $this->incidentService->update(
-                    incident: $incident,
-                    payload: $this->form,
-                    photo: $this->photo,
-                    actor: $this->user(),
-                    ipAddress: request()->ip()
-                );
-
-                $this->dispatch('toast', message: "Incident mis à jour.", type: 'success', duration: 5000);
-                $this->showModal = false;
-                return;
+            if (!$this->canEditIncident($incident)) {
+                throw new BusinessRuleException("Modification refusée (incident verrouillé ou rôle).");
             }
 
-            // Create
-            $created = $this->incidentService->create(
+            $this->incidentService->update(
+                incident: $incident,
                 payload: $this->form,
                 photo: $this->photo,
                 actor: $this->user(),
                 ipAddress: request()->ip()
             );
 
-            $this->dispatch('toast', message: "Incident créé : {$created->code_incident}", type: 'success', duration: 5000);
+            $this->dispatch('toast', message: "Incident mis à jour.", type: 'success', duration: 5000);
             $this->showModal = false;
-        } catch (BusinessRuleException $e) {
+            return;
+        }
+
+        // Create
+        $created = $this->incidentService->create(
+            payload: $this->form,
+            photo: $this->photo,
+            actor: $this->user(),
+            ipAddress: request()->ip()
+        );
+
+        $this->dispatch('toast', message: "Incident créé : {$created->code_incident}", type: 'success', duration: 5000);
+        $this->showModal = false;
+        /*  } catch (BusinessRuleException $e) {
             $this->dispatch('toast', message: $e->getMessage(), type: 'warning', duration: 6500);
         } catch (\Throwable $e) {
             report($e);
             $this->dispatch('toast', message: "Erreur interne. Veuillez réessayer.", type: 'error', duration: 6500);
-        }
+        }*/
     }
 
     /* -------------------------------------------
