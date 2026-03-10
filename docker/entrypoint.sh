@@ -6,6 +6,12 @@ php -r "echo getenv('DB_CONNECTION').PHP_EOL; echo getenv('DATABASE_URL').PHP_EO
 
 echo "==> Booting SALAMA…"
 
+mkdir -p storage/app/livewire-tmp
+mkdir -p storage/app/public/incidents
+mkdir -p storage/app/public/case-notes
+mkdir -p storage/app/public/referencements
+chmod -R 775 storage bootstrap/cache
+
 # 1) Toujours repartir d’une config propre (évite sqlite “collé”)
 php artisan config:clear || true
 php artisan cache:clear || true
@@ -18,8 +24,7 @@ php -r "require 'vendor/autoload.php'; \$app=require 'bootstrap/app.php'; \$app-
 # 3) Storage link
 php artisan storage:link || true
 
-mkdir -p storage/app/livewire-tmp
-chmod -R 775 storage bootstrap/cache
+
 
 # 4) MIGRATIONS D’ABORD
 php artisan migrate --force
