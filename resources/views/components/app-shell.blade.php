@@ -121,10 +121,20 @@
                 <div class="p-4">
                     <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Navigation</div>
                     <nav class="space-y-1">
-                        <x-nav-link href="/" :active="request()->is('/')" @click="close()">Dashboard</x-nav-link>
-                        <x-nav-link href="#" :active="false" @click="close()">Incidents</x-nav-link>
-                        <x-nav-link href="#" :active="false" @click="close()">Organisations</x-nav-link>
-                        <x-nav-link href="#" :active="false" @click="close()">Utilisateurs</x-nav-link>
+                        <x-nav-link href="{{ route('dashboard') }}" :active="request()->is('/')"
+                            @click="close()">Dashboard</x-nav-link>
+                        <x-nav-link href="{{ route('incidents.index') }}" :active="false"
+                            @click="close()">Incidents</x-nav-link>
+                        <x-nav-link href="{{ route('service-providers.index') }}" :active="false"
+                            @click="close()">Structures</x-nav-link>
+                        <x-nav-link href="{{ route('organisations.index') }}" :active="false"
+                            @click="close()">Organisations</x-nav-link>
+                        <x-nav-link href="{{ route('users.index') }}" :active="false"
+                            @click="close()">Utilisateurs</x-nav-link>
+                        <x-nav-link href="{{ route('supervision.performance') }}" :active="false"
+                            @click="close()">Performance superviseurs</x-nav-link>
+                        <x-nav-link href="{{ route('profile') }}" :active="false" @click="close()">Mon
+                            profil</x-nav-link>
 
                     </nav>
 
