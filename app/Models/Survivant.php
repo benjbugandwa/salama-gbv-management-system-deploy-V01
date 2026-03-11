@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Survivant extends Model
 {
@@ -41,12 +45,12 @@ class Survivant extends Model
         'age_survivant' => 'integer',
     ];
 
-    public function incidents()
+    public function incidents(): HasMany
     {
         return $this->hasMany(Incident::class, 'survivant_id', 'id');
     }
 
-    public function author()
+    public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by', 'id');
     }

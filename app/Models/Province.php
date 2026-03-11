@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Province extends Model
 {
@@ -13,12 +17,12 @@ class Province extends Model
 
     protected $fillable = ['code_province', 'nom_province'];
 
-    public function territoires()
+    public function territoires(): HasMany
     {
         return $this->hasMany(Territoire::class, 'code_province', 'code_province');
     }
 
-    public function zonesSantes()
+    public function zonesSantes(): HasManyThrough
     {
         return $this->hasManyThrough(
             ZoneSante::class,
@@ -30,12 +34,12 @@ class Province extends Model
         );
     }
 
-    public function incidents()
+    public function incidents(): HasMany
     {
         return $this->hasMany(Incident::class, 'code_province', 'code_province');
     }
 
-    public function users()
+    public function users(): HasMany
     {
         return $this->hasMany(User::class, 'code_province', 'code_province');
     }

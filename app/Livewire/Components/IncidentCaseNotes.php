@@ -7,7 +7,9 @@ use App\Models\CaseNote;
 use App\Models\Incident;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
+use App\Livewire\Forms\CaseNoteForm;
+use App\Services\CaseNotesService;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -22,17 +24,8 @@ class IncidentCaseNotes extends Component
     public ?int $editingId = null;
     public bool $showEditModal = false;
 
-    public array $form = [
-        'case_note' => '',
-        'is_confidential' => false,
-        'file_path' => null,
-    ];
-
-    public array $editForm = [
-        'case_note' => '',
-        'is_confidential' => false,
-        'file_path' => null,
-    ];
+    public CaseNoteForm $form;
+    public CaseNoteForm $editForm;
 
     public $file; // TemporaryUploadedFile|null
 
@@ -70,27 +63,8 @@ class IncidentCaseNotes extends Component
         return ($u->code_province ?? null) && ($u->code_province === $incident->code_province);
     }
 
-    private function audit(string $action, string $modelType, ?string $modelUuid = null, array $meta = []): void
-    {
-        AuditLog::create([
-            'id' => random_int(100000000, 999999999),
-            'user_id' => Auth::id(),
-            'user_action' => $action,
-            'model_type' => $modelType,
-            'model_id' => $modelUuid, // UUID ou NULL
-            'ip_address' => request()->ip(),
-            'action_meta' => json_encode($meta, JSON_UNESCAPED_UNICODE),
-        ]);
-    }
 
-    private function rules(): array
-    {
-        return [
-            'form.case_note' => ['required', 'string', 'min:3'],
-            'form.is_confidential' => ['boolean'],
-            'file' => ['nullable', 'file', 'max:4096'], // 4MB
-        ];
-    }
+    // Removed local rules
 
     /* ------------------------------ UI ------------------------------ */
 
@@ -99,15 +73,15 @@ class IncidentCaseNotes extends Component
         $incident = $this->incident();
 
         if (!$this->canWrite()) {
-            $this->dispatch('toast', message: "Vous n'avez pas l'autorisation d'ajouter une note.", type: 'error', duration: 6000);
+            $this->dispatch('toast', "Vous n'avez pas l'autorisation d'ajouter une note.", 'error', 6000);
             return;
         }
         if (!$this->sameProvinceAsUser($incident)) {
-            $this->dispatch('toast', message: "Accès refusé (province).", type: 'error', duration: 6000);
+            $this->dispatch('toast', "Accès refusé (province).", 'error', 6000);
             return;
         }
         if ($this->isLocked($incident)) {
-            $this->dispatch('toast', message: "Incident clôturé/archivé : ajout de note impossible.", type: 'warning', duration: 6000);
+            $this->dispatch('toast', "Incident clôturé/archivé : ajout de note impossible.", 'warning', 6000);
             return;
         }
 
@@ -116,11 +90,7 @@ class IncidentCaseNotes extends Component
         $this->editingId = null;
         $this->file = null;
 
-        $this->form = [
-            'case_note' => '',
-            'is_confidential' => false,
-            'file_path' => null,
-        ];
+        $this->form->reset();
 
         $this->showEditModal = true;
     }
@@ -130,15 +100,15 @@ class IncidentCaseNotes extends Component
         $incident = $this->incident();
 
         if (!$this->canWrite()) {
-            $this->dispatch('toast', message: "Vous n'avez pas l'autorisation de modifier une note.", type: 'error', duration: 6000);
+            $this->dispatch('toast', "Vous n'avez pas l'autorisation de modifier une note.", 'error', 6000);
             return;
         }
         if (!$this->sameProvinceAsUser($incident)) {
-            $this->dispatch('toast', message: "Accès refusé (province).", type: 'error', duration: 6000);
+            $this->dispatch('toast', "Accès refusé (province).", 'error', 6000);
             return;
         }
         if ($this->isLocked($incident)) {
-            $this->dispatch('toast', message: "Incident clôturé/archivé : modification impossible.", type: 'warning', duration: 6000);
+            $this->dispatch('toast', "Incident clôturé/archivé : modification impossible.", 'warning', 6000);
             return;
         }
 
@@ -152,11 +122,7 @@ class IncidentCaseNotes extends Component
         $this->editingId = $note->id;
         $this->file = null;
 
-        $this->editForm  = [
-            'case_note' => $note->case_note ?? '',
-            'is_confidential' => (bool)$note->is_confidential,
-            'file_path' => $note->file_path,
-        ];
+        $this->editForm->setCaseNote($note);
 
         $this->showEditModal = true;
     }
@@ -167,17 +133,8 @@ class IncidentCaseNotes extends Component
         $this->editing = false;
         $this->editingId = null;
 
-        $this->form = [
-            'case_note' => '',
-            'is_confidential' => false,
-            'file_path' => null,
-        ];
-
-        $this->editForm = [
-            'case_note' => '',
-            'is_confidential' => false,
-            'file_path' => null,
-        ];
+        $this->form->reset();
+        $this->editForm->reset();
     }
 
     public function save(): void
@@ -185,76 +142,61 @@ class IncidentCaseNotes extends Component
         $incident = $this->incident();
 
         if (!$this->canWrite()) {
-            $this->dispatch('toast', message: "Action non autorisée.", type: 'error', duration: 6000);
+            $this->dispatch('toast', "Action non autorisée.", 'error', 6000);
             return;
         }
         if (!$this->sameProvinceAsUser($incident)) {
-            $this->dispatch('toast', message: "Accès refusé (province).", type: 'error', duration: 6000);
+            $this->dispatch('toast', "Accès refusé (province).", 'error', 6000);
             return;
         }
         if ($this->isLocked($incident)) {
-            $this->dispatch('toast', message: "Incident clôturé/archivé : opération impossible.", type: 'warning', duration: 6000);
+            $this->dispatch('toast', "Incident clôturé/archivé : opération impossible.", 'warning', 6000);
             return;
         }
 
-        $this->validate($this->rules());
+        $this->form->validate();
 
-        DB::transaction(function () use ($incident) {
-            if ($this->editing && $this->editingId) {
-                $note = CaseNote::query()
-                    ->where('id', $this->editingId)
-                    ->where('id_incident', $this->incidentId)
-                    ->firstOrFail();
+        $this->validate([
+            'file' => ['nullable', 'file', 'max:4096'],
+        ]);
 
-                $note->case_note = $this->editForm['case_note'];
-                $note->is_confidential = (bool)$this->editForm['is_confidential'];
+        $service = app(CaseNotesService::class);
+        $payload = [
+            'case_note' => $this->form->case_note,
+            'is_confidential' => $this->form->is_confidential,
+        ];
 
-                if ($this->file) {
-                    $path = $this->file->store('case-notes', 'public');
-                    $note->file_path = $path;
-                }
+        if ($this->editing && $this->editingId) {
+            $service->updateNote(
+                (string)$this->editingId,
+                ['case_note' => $this->editForm->case_note, 'is_confidential' => $this->editForm->is_confidential],
+                $this->file,
+                Auth::user(),
+                request()->ip()
+            );
+        } else {
+            $service->createNote(
+                $this->incidentId,
+                $payload,
+                $this->file,
+                Auth::user(),
+                request()->ip()
+            );
+        }
 
-                $note->save();
-
-                $this->audit('case_note_updated', 'case_note', null, [
-                    'case_note_id' => $note->id,
-                    'incident_id' => $incident->id,
-                    'is_confidential' => (bool)$note->is_confidential,
-                ]);
-
-                $this->dispatch('toast', message: 'Note modifiée.', type: 'success', duration: 5000);
-                $this->closeEditModal();
-
-                return;
-            }
-
-            $note = new CaseNote();
-            $note->id_incident = $this->incidentId;
-            $note->case_note = $this->form['case_note'];
-            $note->is_confidential = (bool)$this->form['is_confidential'];
-            $note->created_by = Auth::id();
-
-            if ($this->file) {
-                $path = $this->file->store('case-notes', 'public');
-                $note->file_path = $path;
-            }
-
-            $note->save();
-
-            $this->audit('case_note_created', 'case_note', null, [
-                'case_note_id' => $note->id,
-                'incident_id' => $incident->id,
-                'is_confidential' => (bool)$note->is_confidential,
-            ]);
-        });
-
-        $this->dispatch('toast', message: $this->editing ? "Note mise à jour." : "Note ajoutée.", type: 'success', duration: 5000);
+        $this->dispatch('toast', $this->editing ? "Note mise à jour." : "Note ajoutée.", 'success', 5000);
         $this->showEditModal = false;
         $this->editing = false;
         $this->editingId = null;
+        
+        // Very important: reset the file upload explicitly to clear the DOM input.
         $this->file = null;
+        $this->form->reset();
+        $this->reset('file');
 
-        // Si tu veux rafraîchir un parent (Show) :
+        // Refresh computing properties
+        unset($this->notes);
+
         $this->dispatch('case-notes-updated');
     }
 
@@ -263,69 +205,50 @@ class IncidentCaseNotes extends Component
         $this->showEditModal = false;
         $this->editingId = null;
 
-        $this->editForm = [
-            'case_note' => '',
-            'is_confidential' => false,
-            'file_path' => null,
-        ];
+        $this->editForm->reset();
     }
 
     public function update(): void
     {
         $incident = $this->incident();
+        $this->editForm->validate();
+
         $this->validate([
-            'editForm.case_note' => ['required', 'string', 'min:2'],
-            'editForm.is_confidential' => ['boolean'],
+            'file' => ['nullable', 'file', 'max:4096'],
         ]);
 
-        $note = CaseNote::query()
-            ->where('id', $this->editingId)
-            ->where('id_incident', $this->incidentId)
-            ->firstOrFail();
+        $service = app(CaseNotesService::class);
+        $payload = [
+            'case_note' => $this->editForm->case_note,
+            'is_confidential' => $this->editForm->is_confidential,
+        ];
 
-        $note->case_note = $this->editForm['case_note'];
-        $note->is_confidential = (bool) $this->editForm['is_confidential'];
-        if ($this->file) {
-            $path = $this->file->store('case-notes', 'public');
-            $note->file_path = $path;
-        }
-        $note->save();
+        $service->updateNote(
+            (string)$this->editingId,
+            $payload,
+            $this->file,
+            Auth::user(),
+            request()->ip()
+        );
 
-        $this->audit('case_note_updated', 'case_note', null, [
-            'case_note_id' => $note->id,
-            'incident_id' => $incident->id,
-            'is_confidential' => (bool)$note->is_confidential,
-        ]);
+        $this->dispatch('toast', 'Note modifiée.', 'success', 5000);
 
-        $this->dispatch('toast', message: 'Note modifiée.', type: 'success', duration: 5000);
-
-        $this->loadNotes();
+        unset($this->notes);
+        
         $this->showEditModal = false;
         $this->editing = false;
         $this->editingId = null;
         $this->file = null;
 
-        $this->form = [
-            'case_note' => '',
-            'is_confidential' => false,
-            'file_path' => null,
-        ];
+        $this->form->reset();
 
         $this->closeEditModal();
     }
 
-    public function getNotesProperty()
+    #[Computed]
+    public function notes()
     {
         return CaseNote::query()
-            ->where('id_incident', $this->incidentId)
-            ->with('author:id,name')
-            ->latest()
-            ->get();
-    }
-
-    public function render()
-    {
-        $notes = CaseNote::query()
             ->where('id_incident', $this->incidentId)
             ->leftJoin('users', 'case_notes.created_by', '=', 'users.id')
             ->orderBy('case_notes.created_at', 'asc')
@@ -333,11 +256,13 @@ class IncidentCaseNotes extends Component
                 'case_notes.*',
                 DB::raw("COALESCE(users.name, '—') as author_name"),
             ]);
+    }
 
+    public function render()
+    {
         $incident = $this->incident();
 
         return view('livewire.components.incident-case-notes', [
-            'notes' => $notes,
             'incidentStatus' => $incident->statut_incident,
             'canWrite' => $this->canWrite() && !$this->isLocked($incident) && $this->sameProvinceAsUser($incident),
         ]);

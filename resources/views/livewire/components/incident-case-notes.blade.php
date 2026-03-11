@@ -12,7 +12,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                     <div class="md:col-span-2">
                         <label class="text-sm font-medium text-gray-700">Note</label>
-                        <textarea wire:model.defer="form.case_note" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                        <textarea wire:model="form.case_note" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                             rows="3" placeholder="Ajouter une note de suivi..."></textarea>
 
                         @error('form.case_note')
@@ -23,7 +23,7 @@
                     <div class="space-y-2">
                         <label class="inline-flex items-center gap-2 text-sm text-gray-700">
                             <input type="checkbox" class="rounded border-gray-300"
-                                wire:model.defer="form.is_confidential">
+                                wire:model="form.is_confidential">
                             <span>Confidentiel</span>
                         </label>
 
@@ -114,7 +114,7 @@
                 <div class="p-5 space-y-3 overflow-y-auto">
                     <div>
                         <label class="text-sm font-medium text-gray-700">Note</label>
-                        <textarea wire:model.defer="editForm.case_note" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                        <textarea wire:model="editForm.case_note" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                             rows="4"></textarea>
                         @error('editForm.case_note')
                             <div class="text-sm text-red-600">{{ $message }}</div>
@@ -123,7 +123,7 @@
 
                     <label class="inline-flex items-center gap-2 text-sm text-gray-700">
                         <input type="checkbox" class="rounded border-gray-300"
-                            wire:model.defer="editForm.is_confidential">
+                            wire:model="editForm.is_confidential">
                         <span>Confidentiel</span>
                     </label>
 

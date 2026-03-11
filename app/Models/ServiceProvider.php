@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ServiceProvider extends Model
 {
@@ -40,12 +44,12 @@ class ServiceProvider extends Model
         }
     }
 
-    public function referencements()
+    public function referencements(): HasMany
     {
         return $this->hasMany(Referencement::class, 'provider_id', 'id');
     }
 
-    public function author()
+    public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by', 'id');
     }

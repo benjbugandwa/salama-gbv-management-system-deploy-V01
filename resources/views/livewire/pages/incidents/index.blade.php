@@ -1,4 +1,13 @@
-<div class="space-y-6" x-data x-on:open-url.window="window.open($event.detail.url, '_blank')">
+<div class="space-y-6 relative" x-data x-on:open-url.window="window.open($event.detail.url, '_blank')">
+    <div wire:loading class="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-2xl">
+        <div class="flex flex-col items-center gap-2">
+            <svg class="animate-spin h-8 w-8 text-onu" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-sm font-medium text-gray-700">Chargement...</span>
+        </div>
+    </div>
     <div class="flex items-start justify-between gap-4">
         <div>
             <div class="text-2xl font-bold">Incidents</div>
@@ -51,7 +60,7 @@
                     <select wire:model.live="f_province"
                         class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
                         <option value="">Toutes</option>
-                        @foreach ($provinces as $p)
+                        @foreach ($this->provinces as $p)
                             <option value="{{ $p['code'] }}">{{ $p['name'] }}</option>
                         @endforeach
                     </select>
@@ -63,7 +72,7 @@
                 <select wire:model.live="f_territoire"
                     class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
                     <option value="">Tous</option>
-                    @foreach ($territoires as $t)
+                    @foreach ($this->territoires as $t)
                         <option value="{{ $t['code'] }}">{{ $t['name'] }}</option>
                     @endforeach
                 </select>
@@ -74,7 +83,7 @@
                 <select wire:model.live="f_zone"
                     class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
                     <option value="">Toutes</option>
-                    @foreach ($zones as $z)
+                    @foreach ($this->zones as $z)
                         <option value="{{ $z['code'] }}">{{ $z['name'] }}</option>
                     @endforeach
                 </select>
@@ -268,7 +277,7 @@
                             <label class="text-sm font-medium text-gray-700">Sévérité *</label>
                             <select wire:model.defer="form.severite"
                                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
-                                @foreach ($severityOptions as $opt)
+                                @foreach ($this->severityOptions as $opt)
                                     <option value="{{ $opt }}">{{ $opt }}</option>
                                 @endforeach
                             </select>
@@ -306,7 +315,7 @@
                                         {{ auth()->user()->code_province }}</option>
                                 @else
                                     <option value="">-- Sélectionner --</option>
-                                    @foreach ($provinces as $p)
+                                    @foreach ($this->provinces as $p)
                                         <option value="{{ $p['code'] }}">{{ $p['name'] }}</option>
                                     @endforeach
                                 @endif
@@ -321,7 +330,7 @@
                             <select wire:model.live="form.code_territoire"
                                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
                                 <option value="">-- Sélectionner --</option>
-                                @foreach ($territoires as $t)
+                                @foreach ($this->territoires as $t)
                                     <option value="{{ $t['code'] }}">{{ $t['name'] }}</option>
                                 @endforeach
                             </select>
@@ -335,7 +344,7 @@
                             <select wire:model.defer="form.code_zonesante"
                                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
                                 <option value="">-- Sélectionner --</option>
-                                @foreach ($zones as $z)
+                                @foreach ($this->zones as $z)
                                     <option value="{{ $z['code'] }}">{{ $z['name'] }}</option>
                                 @endforeach
                             </select>
@@ -349,7 +358,7 @@
                             <select wire:model.defer="form.survivant_id"
                                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
                                 <option value="">-- Aucun --</option>
-                                @foreach ($survivants as $s)
+                                @foreach ($this->survivants as $s)
                                     <option value="{{ $s->id }}">{{ $s->code_survivant }} —
                                         {{ $s->full_name }}</option>
                                 @endforeach
@@ -371,7 +380,7 @@
                             <label class="text-sm font-medium text-gray-700">Confidentialité *</label>
                             <select wire:model.defer="form.confidentiality_level"
                                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
-                                @foreach ($confidentialityOptions as $opt)
+                                @foreach ($this->confidentialityOptions as $opt)
                                     <option value="{{ $opt }}">{{ $opt }}</option>
                                 @endforeach
                             </select>
@@ -442,7 +451,7 @@
                         <select wire:model.defer="assignTo"
                             class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
                             <option value="">-- Sélectionner --</option>
-                            @foreach ($superviseursOptions as $u)
+                            @foreach ($this->superviseursOptions as $u)
                                 <option value="{{ $u['id'] }}">{{ $u['name'] }} ({{ $u['email'] }})
                                 </option>
                             @endforeach

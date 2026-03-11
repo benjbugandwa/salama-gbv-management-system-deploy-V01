@@ -4,6 +4,7 @@ namespace App\Livewire\Components;
 
 use App\Models\Province;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 class IncidentsExportModal extends Component
@@ -22,8 +23,6 @@ class IncidentsExportModal extends Component
     public bool $include_referencements = true;
     public bool $include_violences = true;
 
-    /** @var array<int, array{code:string,name:string}> */
-    public array $provinces = [];
 
     protected $listeners = [
         'openIncidentsExport' => 'open',
@@ -33,15 +32,20 @@ class IncidentsExportModal extends Component
     {
         $this->to = now()->toDateString();
         $this->from = now()->subDays(30)->toDateString();
+    }
 
+    #[Computed]
+    public function provinces(): array
+    {
         if (Auth::user()?->user_role === 'superadmin') {
-            $this->provinces = Province::query()
+            return Province::query()
                 ->select(['code_province', 'nom_province'])
                 ->orderBy('nom_province')
                 ->get()
                 ->map(fn($p) => ['code' => $p->code_province, 'name' => $p->nom_province])
                 ->all();
         }
+        return [];
     }
 
     public function open(): void

@@ -1,9 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Incident extends Model
 {
@@ -51,56 +56,56 @@ class Incident extends Model
     ];
 
     // Relations utiles (cohérentes avec les FK SQL)
-    public function creator()
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function province()
+    public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class, 'code_province', 'code_province');
     }
 
-    public function territoire()
+    public function territoire(): BelongsTo
     {
         return $this->belongsTo(Territoire::class, 'code_territoire', 'code_territoire');
     }
 
-    public function zoneSante()
+    public function zoneSante(): BelongsTo
     {
         return $this->belongsTo(ZoneSante::class, 'code_zonesante', 'code_zonesante');
     }
 
-    public function violences()
+    public function violences(): BelongsToMany
     {
         return $this->belongsToMany(Violence::class, 'violence_incidents', 'id_incident', 'id_violence')
             ->withPivot(['id', 'description_violence', 'created_by', 'created_at']);
     }
 
-    public function violencesLinks()
+    public function violencesLinks(): HasMany
     {
         return $this->hasMany(ViolenceIncident::class, 'id_incident', 'id');
     }
 
 
 
-    public function caseNotes()
+    public function caseNotes(): HasMany
     {
         return $this->hasMany(\App\Models\CaseNote::class, 'id_incident', 'id');
     }
 
-    public function assignedTo()
+    public function assignedTo(): BelongsTo
     {
         // adapte le nom de la colonne FK selon ta table incidents
         return $this->belongsTo(User::class, 'assigned_to', 'id');
     }
 
-    public function referencements()
+    public function referencements(): HasMany
     {
         return $this->hasMany(Referencement::class, 'id_incident', 'id');
     }
 
-    public function survivant()
+    public function survivant(): BelongsTo
     {
         // incidents.survivant_id (uuid) -> survivants.id (uuid)
         return $this->belongsTo(Survivant::class, 'survivant_id', 'id');

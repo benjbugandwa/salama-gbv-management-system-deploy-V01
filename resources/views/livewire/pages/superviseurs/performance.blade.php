@@ -15,7 +15,7 @@
                 <label class="text-sm font-medium text-gray-700">Superviseur</label>
                 <select wire:model.live="superviseurId"
                     class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
-                    @foreach ($superviseurs as $s)
+                    @foreach ($this->superviseurs as $s)
                         <option value="{{ $s['id'] }}">
                             {{ $s['name'] }} — {{ $s['email'] }}
                             @if (auth()->user()->user_role === 'superadmin')

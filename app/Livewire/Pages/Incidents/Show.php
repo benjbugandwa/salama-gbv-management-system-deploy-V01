@@ -17,6 +17,13 @@ class Show extends Component
     public string $confirmMessage = '';
     public string $confirmAction = ''; // 'validate'
 
+    protected $listeners = ['violences-updated' => 'refreshIncident'];
+
+    public function refreshIncident(): void
+    {
+        $this->incident->refresh()->load(['violences:id,violence_name,categorie_name']);
+    }
+
     public function mount(Incident $incident): void
     {
         // Sécurité province (superadmin voit tout)

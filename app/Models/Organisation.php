@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Organisation extends Model
 {
@@ -19,7 +22,7 @@ class Organisation extends Model
 
     ];
 
-    public function users()
+    public function users(): HasMany
     {
         return $this->hasMany(User::class, 'org_id');
     }

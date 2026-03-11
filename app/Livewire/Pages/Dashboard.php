@@ -4,6 +4,7 @@ namespace App\Livewire\Pages;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
 
 class Dashboard extends Component
@@ -30,39 +31,34 @@ class Dashboard extends Component
                 ->value('nom_province');
         }
 
-        // --------- KPI Users ----------
-        $usersActiveQuery = DB::table('users')->where('is_active', true);
-        $usersPendingQuery = DB::table('users')->where('is_active', false);
+        // --------- KPI Users (Cache 15 min) ----------
+        $cacheKeyUsers = "dashboard_users_" . ($provinceScope ?: 'all');
+        list($usersActive, $usersPending) = Cache::remember($cacheKeyUsers, now()->addMinutes(15), function () use ($provinceScope) {
+            $usersActiveQuery = DB::table('users')->where('is_active', true);
+            $usersPendingQuery = DB::table('users')->where('is_active', false);
 
-        if ($provinceScope) {
-            $usersActiveQuery->where('code_province', $provinceScope);
-            $usersPendingQuery->where('code_province', $provinceScope);
-        }
+            if ($provinceScope) {
+                $usersActiveQuery->where('code_province', $provinceScope);
+                $usersPendingQuery->where('code_province', $provinceScope);
+            }
 
-        $usersActive = (int) $usersActiveQuery->count();
-        $usersPending = (int) $usersPendingQuery->count();
+            return [
+                (int) $usersActiveQuery->count(),
+                (int) $usersPendingQuery->count()
+            ];
+        });
 
-        // --------- Incidents base query ----------
-        // incidents.date_incident, incidents.statut_incident, incidents.code_province :contentReference[oaicite:1]{index=1}
-        $incBase = DB::table('incidents');
+        // --------- Incidents par province (Cache 15 min) ----------
+        $cacheKeyProvince = "dashboard_inc_prov_" . ($provinceScope ?: 'all');
+        $byProvince = Cache::remember($cacheKeyProvince, now()->addMinutes(15), function () use ($provinceScope) {
+            $q = DB::table('incidents')
+                ->leftJoin('provinces', 'incidents.code_province', '=', 'provinces.code_province')
+                ->selectRaw("COALESCE(provinces.nom_province, incidents.code_province, 'N/A') as label, COUNT(*)::int as total");
+            if ($provinceScope) $q->where('incidents.code_province', $provinceScope);
+            return $q->groupBy('label')->orderByDesc('total')->limit(15)->get();
+        });
 
-        if ($provinceScope) {
-            $incBase->where('incidents.code_province', $provinceScope);
-        }
-
-        // --------- Incidents par province ----------
-        // Join provinces (code_province, nom_province) :contentReference[oaicite:2]{index=2}
-        $byProvince = (clone $incBase)
-            ->leftJoin('provinces', 'incidents.code_province', '=', 'provinces.code_province')
-            ->selectRaw("COALESCE(provinces.nom_province, incidents.code_province, 'N/A') as label, COUNT(*)::int as total")
-            ->groupBy('label')
-            ->orderByDesc('total')
-            ->limit(15)
-            ->get();
-
-        //------Pourcentage d'incidents par province (par rapport au total)------
         $byProvinceTotal = (int) $byProvince->sum('total');
-
         $byProvinceTable = $byProvince->map(function ($row) use ($byProvinceTotal) {
             $pct = $byProvinceTotal > 0 ? round(($row->total / $byProvinceTotal) * 100, 1) : 0;
             return [
@@ -72,22 +68,25 @@ class Dashboard extends Component
             ];
         })->values();
 
-        // --------- Incidents par statut ----------
-        $byStatus = (clone $incBase)
-            ->selectRaw("COALESCE(incidents.statut_incident, 'N/A') as label, COUNT(*)::int as total")
-            ->groupBy('label')
-            ->orderByDesc('total')
-            ->get();
+        // --------- Incidents par statut (Cache 15 min) ----------
+        $cacheKeyStatus = "dashboard_inc_stat_" . ($provinceScope ?: 'all');
+        $byStatus = Cache::remember($cacheKeyStatus, now()->addMinutes(15), function () use ($provinceScope) {
+            $q = DB::table('incidents')
+                ->selectRaw("COALESCE(incidents.statut_incident, 'N/A') as label, COUNT(*)::int as total");
+            if ($provinceScope) $q->where('incidents.code_province', $provinceScope);
+            return $q->groupBy('label')->orderByDesc('total')->get();
+        });
 
-        // --------- Evolution incidents (X jours) ----------
-        // On groupe par jour sur date_incident (timestamp) :contentReference[oaicite:3]{index=3}
-        $evolution = (clone $incBase)
-            ->whereNotNull('incidents.date_incident')
-            ->where('incidents.date_incident', '>=', now()->subDays($this->days)->startOfDay())
-            ->selectRaw("to_char(incidents.date_incident::date, 'YYYY-MM-DD') as d, COUNT(*)::int as total")
-            ->groupBy('d')
-            ->orderBy('d')
-            ->get();
+        // --------- Evolution incidents (X jours) (Cache 15 min) ----------
+        $cacheKeyEvo = "dashboard_inc_evo_" . ($provinceScope ?: 'all') . "_days_" . $this->days;
+        $evolution = Cache::remember($cacheKeyEvo, now()->addMinutes(15), function () use ($provinceScope) {
+            $q = DB::table('incidents')
+                ->whereNotNull('incidents.date_incident')
+                ->where('incidents.date_incident', '>=', now()->subDays($this->days)->startOfDay())
+                ->selectRaw("to_char(incidents.date_incident::date, 'YYYY-MM-DD') as d, COUNT(*)::int as total");
+            if ($provinceScope) $q->where('incidents.code_province', $provinceScope);
+            return $q->groupBy('d')->orderBy('d')->get();
+        });
 
         // Préparer datasets pour Chart.js
         $chart = [

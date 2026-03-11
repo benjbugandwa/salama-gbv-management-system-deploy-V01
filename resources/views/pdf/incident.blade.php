@@ -274,7 +274,13 @@
                                     <td>
                                         {{ $r->provider->provider_name ?? '-' }}
                                         @if ($r->provider?->provider_location)
-                                            <div class="muted">{{ $r->provider->provider_location }}</div>
+                                            <div class="muted">
+                                                @if(is_array($r->provider->provider_location))
+                                                    {{ implode(', ', $r->provider->provider_location) }}
+                                                @else
+                                                    {{ $r->provider->provider_location }}
+                                                @endif
+                                            </div>
                                         @endif
                                     </td>
                                     <td>{{ $r->type_reponse ?? '-' }}</td>

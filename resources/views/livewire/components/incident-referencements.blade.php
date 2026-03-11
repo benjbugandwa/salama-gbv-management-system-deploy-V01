@@ -124,7 +124,7 @@
                             <label class="text-sm font-medium text-gray-700">Statut réponse *</label>
                             <select wire:model.defer="form.statut_reponse"
                                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
-                                @foreach ($statusOptions as $st)
+                                @foreach ($this->statusOptions as $st)
                                     <option value="{{ $st }}">{{ $st }}</option>
                                 @endforeach
                             </select>
@@ -138,7 +138,7 @@
                             <select wire:model.live="form.type_reponse"
                                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
                                 <option value="">-- Sélectionner --</option>
-                                @foreach ($typeOptions as $t)
+                                @foreach ($this->typeOptions as $t)
                                     <option value="{{ $t }}">{{ $t }}</option>
                                 @endforeach
                             </select>
@@ -258,7 +258,7 @@
                     <div class="space-y-2">
                         <div class="text-sm font-medium text-gray-700">Services proposés</div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            @foreach ($typeOptions as $opt)
+                            @foreach ($this->typeOptions as $opt)
                                 <label class="inline-flex items-center gap-2 text-sm">
                                     <input type="checkbox" class="rounded border-gray-300"
                                         wire:model.live="providerForm.type_services_proposes"

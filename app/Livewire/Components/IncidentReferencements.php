@@ -9,7 +9,9 @@ use App\Models\ServiceProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Services\ReferencementService;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\CaseNote;
@@ -29,20 +31,9 @@ class IncidentReferencements extends Component
 
     public $file; // TemporaryUploadedFile|null
 
-    public array $typeOptions = [
-        'Prise en charge médicale',
-        'Soutien psychologique et psychosocial',
-        'Prise en charge juridique et judiciaire',
-        'Soutien socio-économique',
-        'Gestion de cas',
-        'Autre',
-    ];
-
     protected $listeners = [
         'incidentStatusChanged' => 'refreshIncidentStatus',
     ];
-
-    public array $statusOptions = ['En attente', 'En cours', 'Fournie', 'refusée'];
 
     public array $form = [
         'date_referencement' => null,
@@ -82,6 +73,25 @@ class IncidentReferencements extends Component
 
     /* ------------------------- Guards & Helpers ------------------------- */
 
+    #[Computed]
+    public function typeOptions(): array
+    {
+        return [
+            'Prise en charge médicale',
+            'Soutien psychologique et psychosocial',
+            'Prise en charge juridique et judiciaire',
+            'Soutien socio-économique',
+            'Gestion de cas',
+            'Autre',
+        ];
+    }
+
+    #[Computed]
+    public function statusOptions(): array
+    {
+        return ['En attente', 'En cours', 'Fournie', 'refusée'];
+    }
+
     private function userRole(): string
     {
         return Auth::user()->user_role ?? '';
@@ -117,19 +127,6 @@ class IncidentReferencements extends Component
         $u = Auth::user();
         if (($u->user_role ?? '') === 'superadmin') return true;
         return ($u->code_province ?? null) && ($u->code_province === $incident->code_province);
-    }
-
-    private function audit(string $action, string $modelType, ?string $modelUuid = null, array $meta = []): void
-    {
-        AuditLog::create([
-            'id' => random_int(100000000, 999999999),
-            'user_id' => Auth::id(),
-            'user_action' => $action,
-            'model_type' => $modelType,
-            'model_id' => $modelUuid, // uuid ou NULL
-            'ip_address' => request()->ip(),
-            'action_meta' => json_encode($meta, JSON_UNESCAPED_UNICODE),
-        ]);
     }
 
     private function rules(): array
@@ -174,52 +171,6 @@ class IncidentReferencements extends Component
         }
 
         return true;
-    }
-
-    private function generateReferencementCode2(): string
-    {
-        // Utilise une séquence si tu en as une, sinon fallback.
-        // Option robuste: séquence PostgreSQL "referencement_code_seq"
-        try {
-            $n = DB::selectOne("SELECT nextval('referencement_code_seq') as n")->n ?? null;
-            if ($n !== null) {
-                return 'REF-' . str_pad((string)$n, 6, '0', STR_PAD_LEFT);
-            }
-        } catch (\Throwable $e) {
-            // fallback ci-dessous
-        }
-
-        $last = DB::table('referencements')
-            ->where('code_referencement', 'like', 'REF-%')
-            ->orderByDesc('code_referencement')
-            ->value('code_referencement');
-
-        $num = 0;
-        if (is_string($last) && preg_match('/^REF-(\d{6})$/', $last, $m)) {
-            $num = (int)$m[1];
-        }
-
-        return 'REF-' . str_pad((string)($num + 1), 6, '0', STR_PAD_LEFT);
-    }
-
-
-
-    public static function generateReferencementCode(): string
-    {
-        // On utilise xact_lock : pas besoin de unlock manuel, 
-        // il se libère dès que le DB::transaction ou le parent finit.
-        DB::select("SELECT pg_advisory_xact_lock(987654321)");
-
-        // Utilisation de SUBSTRING avec Regex pour être plus robuste que regexp_matches
-        $row = DB::selectOne("
-        SELECT MAX(SUBSTRING(code_referencement FROM '[0-9]+')::int) AS max_num
-        FROM referencements
-        WHERE code_referencement ~ '^REF-[0-9]{6}$'
-    ");
-
-        $next = ((int)($row->max_num ?? 0)) + 1;
-
-        return 'REF-' . str_pad((string)$next, 6, '0', STR_PAD_LEFT);
     }
 
     /* ------------------------------ Providers (filtered) ------------------------------ */
@@ -319,68 +270,25 @@ class IncidentReferencements extends Component
 
         $this->validate($this->rules());
 
-        DB::transaction(function () use ($incident) {
-            if ($this->editing && $this->editingId) {
-                $ref = Referencement::query()
-                    ->where('id', $this->editingId)
-                    ->where('id_incident', $this->incidentId)
-                    ->firstOrFail();
+        $service = app(ReferencementService::class);
 
-                $ref->date_referencement = $this->form['date_referencement'];
-                $ref->provider_id = (int)$this->form['provider_id'];
-                $ref->type_reponse = $this->form['type_reponse'];
-                $ref->statut_reponse = $this->form['statut_reponse'];
-                $ref->besoin_suivi = (bool)$this->form['besoin_suivi'];
-                $ref->resultat = $this->form['resultat'];
-                $ref->observations = $this->form['observations'];
-
-                if ($this->file) {
-                    $path = $this->file->store('referencements', 'public');
-                    $ref->file_path = $path;
-                }
-
-                $ref->save();
-
-                $this->audit('referencement_updated', 'referencement', $ref->id, [
-                    'incident_id' => $incident->id,
-                    'provider_id' => $ref->provider_id,
-                    'type_reponse' => $ref->type_reponse,
-                    'statut_reponse' => $ref->statut_reponse,
-                ]);
-
-                return;
-            }
-
-            $ref = new Referencement();
-            $ref->id = (string) Str::uuid();
-            $ref->code_referencement = $this->generateReferencementCode();
-            $ref->id_incident = $this->incidentId;
-
-            $ref->date_referencement = $this->form['date_referencement'];
-            $ref->provider_id = (int)$this->form['provider_id'];
-            $ref->type_reponse = $this->form['type_reponse'];
-            $ref->statut_reponse = $this->form['statut_reponse'];
-            $ref->besoin_suivi = (bool)$this->form['besoin_suivi'];
-            $ref->resultat = $this->form['resultat'];
-            $ref->observations = $this->form['observations'];
-
-            $ref->created_by = Auth::id();
-
-            if ($this->file) {
-                $path = $this->file->store('referencements', 'public');
-                $ref->file_path = $path;
-            }
-
-            $ref->save();
-
-            $this->audit('referencement_created', 'referencement', $ref->id, [
-                'incident_id' => $incident->id,
-                'code_referencement' => $ref->code_referencement,
-                'provider_id' => $ref->provider_id,
-                'type_reponse' => $ref->type_reponse,
-                'statut_reponse' => $ref->statut_reponse,
-            ]);
-        });
+        if ($this->editing && $this->editingId) {
+            $service->update(
+                $this->editingId,
+                $this->form,
+                $this->file,
+                Auth::user(),
+                request()->ip()
+            );
+        } else {
+            $service->create(
+                $this->incidentId,
+                $this->form,
+                $this->file,
+                Auth::user(),
+                request()->ip()
+            );
+        }
 
         $this->dispatch('toast', message: $this->editing ? "Référencement mis à jour." : "Référencement enregistré.", type: 'success', duration: 5000);
         $this->showModal = false;
@@ -442,10 +350,18 @@ class IncidentReferencements extends Component
         $p->created_by = Auth::id();
         $p->save();
 
-        $this->audit('provider_created', 'service_provider', null, [
-            'provider_id' => $p->id,
-            'provider_name' => $p->provider_name,
-            'services' => $this->providerForm['type_services_proposes'],
+        AuditLog::create([
+            'id' => random_int(100000000, 999999999),
+            'user_id' => Auth::id(),
+            'user_action' => 'provider_created',
+            'model_type' => 'service_provider',
+            'model_id' => null,
+            'ip_address' => request()->ip(),
+            'action_meta' => json_encode([
+                'provider_id' => $p->id,
+                'provider_name' => $p->provider_name,
+                'services' => $this->providerForm['type_services_proposes'],
+            ], JSON_UNESCAPED_UNICODE),
         ]);
 
         // sélection automatique dans le formulaire

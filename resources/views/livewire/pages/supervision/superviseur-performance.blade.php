@@ -17,7 +17,7 @@
                     <select wire:model.live="province"
                         class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
                         <option value="">Toutes</option>
-                        @foreach ($provinces as $p)
+                        @foreach ($this->provinces as $p)
                             <option value="{{ $p['code'] }}">{{ $p['name'] }}</option>
                         @endforeach
                     </select>
@@ -29,7 +29,7 @@
                 <select wire:model.live="superviseurId"
                     class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
                     <option value="">-- Sélectionner --</option>
-                    @foreach ($superviseurs as $s)
+                    @foreach ($this->superviseurs as $s)
                         <option value="{{ $s['id'] }}">
                             {{ $s['name'] }} — {{ $s['email'] }}
                         </option>

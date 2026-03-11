@@ -7,8 +7,9 @@ use App\Models\Violence;
 use App\Models\ViolenceIncident;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Livewire\Component;
 use App\Models\AuditLog;
+use Livewire\Attributes\Computed;
+use Livewire\Component;
 
 class IncidentViolencesModal extends Component
 {
@@ -23,8 +24,6 @@ class IncidentViolencesModal extends Component
 
     /** @var array<int,string> violenceId => description */
     public array $descriptions = [];
-
-    public array $violencesGrouped = [];
 
     protected $listeners = ['openIncidentViolences' => 'open'];
 
@@ -46,8 +45,6 @@ class IncidentViolencesModal extends Component
             $this->selected[(int)$row->id_violence] = true;
             $this->descriptions[(int)$row->id_violence] = $row->description_violence ?? '';
         }
-
-        $this->loadViolences();
     }
 
     private function audit(string $action, string $modelType, string $modelId, array $meta = []): void
@@ -63,12 +60,8 @@ class IncidentViolencesModal extends Component
         ]);
     }
 
-    public function updatedQ(): void
-    {
-        $this->loadViolences();
-    }
-
-    private function loadViolences(): void
+    #[Computed]
+    public function violencesGrouped(): array
     {
         $query = Violence::query();
 
@@ -94,7 +87,7 @@ class IncidentViolencesModal extends Component
             ];
         }
 
-        $this->violencesGrouped = $grouped;
+        return $grouped;
     }
 
     public function save(): void

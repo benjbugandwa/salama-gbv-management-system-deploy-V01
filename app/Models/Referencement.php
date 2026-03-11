@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -79,17 +82,17 @@ class Referencement extends Model
         return 'REF-' . str_pad((string)$next, 6, '0', STR_PAD_LEFT);
     }
 
-    public function incident()
+    public function incident(): BelongsTo
     {
         return $this->belongsTo(Incident::class, 'id_incident', 'id');
     }
 
-    public function provider()
+    public function provider(): BelongsTo
     {
         return $this->belongsTo(ServiceProvider::class, 'provider_id', 'id');
     }
 
-    public function author()
+    public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by', 'id');
     }

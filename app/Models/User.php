@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
@@ -59,12 +62,12 @@ class User extends Authenticatable
         ];
     }
 
-    public function organisation()
+    public function organisation(): BelongsTo
     {
         return $this->belongsTo(Organisation::class, 'org_id');
     }
 
-    public function roles()
+    public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'roles_users', 'user_id', 'role_id')
             ->withTimestamps();

@@ -21,7 +21,7 @@
                         </div>
                     </div>
 
-                    @forelse($violencesGrouped as $cat => $items)
+                    @forelse($this->violencesGrouped as $cat => $items)
                         <div class="border rounded-xl overflow-hidden">
                             <div class="px-4 py-2 bg-gray-50 text-sm font-semibold">
                                 {{ $cat }}

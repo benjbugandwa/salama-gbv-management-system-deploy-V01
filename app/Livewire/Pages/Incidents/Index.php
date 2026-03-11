@@ -9,6 +9,8 @@ use App\Exceptions\BusinessRuleException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use App\Livewire\Forms\IncidentForm;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -32,11 +34,6 @@ class Index extends Component
 
     public int $perPage = 10;
 
-    // Data dropdowns
-    public array $provinces = [];
-    public array $territoires = [];
-    public array $zones = [];
-
     // Modal create/edit
     public bool $showModal = false;
     public bool $editing = false;
@@ -46,11 +43,6 @@ class Index extends Component
     public bool $showAssignModal = false;
     public ?string $assignIncidentId = null;
     public ?string $assignTo = null; // uuid superviseur (users.id = uuid)
-    public array $superviseursOptions = [];
-
-    // Options
-    public array $severityOptions = ['Faible', 'Elevée', 'Critique'];
-    public array $confidentialityOptions = ['Standard', 'Protegé', 'Confidentielle'];
 
     // Confirmation modal
     public bool $showConfirmModal = false;
@@ -63,20 +55,7 @@ class Index extends Component
     public $photo; // TemporaryUploadedFile|null
 
     // Form
-    public array $form = [
-        'survivant_id' => null,
-        'date_incident' => null,
-        'severite' => '',
-        'statut_incident' => 'En attente',
-        'auteur_presume' => '',
-        'code_province' => '',
-        'code_territoire' => '',
-        'code_zonesante' => '',
-        'localite' => '',
-        'source_info' => '',
-        'description_faits' => '',
-        'confidentiality_level' => 'Standard',
-    ];
+    public IncidentForm $form;
 
     /** Livewire DI */
     public function boot(IncidentService $incidentService): void
@@ -137,33 +116,34 @@ class Index extends Component
     }
 
     /* -------------------------------------------
-     | Lists (provinces/territoires/zones)
+     | Computed Lists (provinces/territoires/zones)
      ------------------------------------------- */
     private function bootstrapScopeAndLists(): void
     {
-        $this->provinces = DB::table('provinces')
+        if (!$this->isSuperAdmin()) {
+            $this->f_province = $this->user()->code_province ?? '';
+        }
+    }
+
+    #[Computed]
+    public function provinces()
+    {
+        return DB::table('provinces')
             ->select('code_province', 'nom_province')
             ->orderBy('nom_province')
             ->get()
             ->map(fn($p) => ['code' => $p->code_province, 'name' => $p->nom_province])
             ->toArray();
-
-        if (!$this->isSuperAdmin()) {
-            $this->f_province = $this->user()->code_province ?? '';
-        }
-
-        $this->loadTerritoires($this->f_province ?: null);
-        $this->loadZones($this->f_territoire ?: null);
     }
 
-    private function loadTerritoires(?string $codeProvince): void
+    #[Computed]
+    public function territoires()
     {
-        if (!$codeProvince) {
-            $this->territoires = [];
-            return;
-        }
+        $codeProvince = $this->showModal ? $this->form->code_province : $this->f_province;
 
-        $this->territoires = DB::table('territoires')
+        if (!$codeProvince) return [];
+
+        return DB::table('territoires')
             ->select('code_territoire', 'nom_territoire')
             ->where('code_province', $codeProvince)
             ->orderBy('nom_territoire')
@@ -172,15 +152,14 @@ class Index extends Component
             ->toArray();
     }
 
-    private function loadZones(?string $codeTerritoire): void
+    #[Computed]
+    public function zones()
     {
-        if (!$codeTerritoire) {
-            $this->zones = [];
-            return;
-        }
+        $codeTerritoire = $this->showModal ? $this->form->code_territoire : $this->f_territoire;
 
-        // ✅ table: zonesantes
-        $this->zones = DB::table('zonesantes')
+        if (!$codeTerritoire) return [];
+
+        return DB::table('zonesantes')
             ->select('code_zonesante', 'nom_zonesante')
             ->where('code_territoire', $codeTerritoire)
             ->orderBy('nom_zonesante')
@@ -189,17 +168,43 @@ class Index extends Component
             ->toArray();
     }
 
-    private function loadSuperviseursForProvince(string $codeProvince): void
+    #[Computed]
+    public function superviseursOptions()
     {
-        // users.id supposé UUID (comme tu l’as indiqué pour assigned_to)
-        $this->superviseursOptions = \App\Models\User::query()
+        if (!$this->assignIncidentId) return [];
+        $incident = Incident::find($this->assignIncidentId);
+        if (!$incident) return [];
+
+        return \App\Models\User::query()
             ->where('is_active', true)
             ->where('user_role', 'superviseur')
-            ->where('code_province', $codeProvince)
+            ->where('code_province', $incident->code_province)
             ->orderBy('name')
             ->get(['id', 'name', 'email'])
             ->map(fn($u) => ['id' => (string)$u->id, 'name' => $u->name, 'email' => $u->email])
             ->toArray();
+    }
+
+    #[Computed]
+    public function severityOptions()
+    {
+        return ['Faible', 'Elevée', 'Critique'];
+    }
+
+    #[Computed]
+    public function confidentialityOptions()
+    {
+        return ['Standard', 'Protegé', 'Confidentielle'];
+    }
+
+    #[Computed]
+    public function survivants()
+    {
+        return \App\Models\Survivant::query()
+            ->select('id', 'code_survivant', 'full_name')
+            ->orderByDesc('code_survivant')
+            ->limit(200)
+            ->get();
     }
 
     /* -------------------------------------------
@@ -209,30 +214,30 @@ class Index extends Component
     {
         $this->f_territoire = '';
         $this->f_zone = '';
-        $this->loadTerritoires($this->f_province ?: null);
-        $this->zones = [];
+        unset($this->territoires);
+        unset($this->zones);
         $this->resetPage();
     }
 
     public function updatedFTerritoire(): void
     {
         $this->f_zone = '';
-        $this->loadZones($this->f_territoire ?: null);
+        unset($this->zones);
         $this->resetPage();
     }
 
     public function updatedFormCodeProvince(): void
     {
-        $this->form['code_territoire'] = '';
-        $this->form['code_zonesante'] = '';
-        $this->loadTerritoires($this->form['code_province'] ?: null);
-        $this->zones = [];
+        $this->form->code_territoire = '';
+        $this->form->code_zonesante = '';
+        unset($this->territoires);
+        unset($this->zones);
     }
 
     public function updatedFormCodeTerritoire(): void
     {
-        $this->form['code_zonesante'] = '';
-        $this->loadZones($this->form['code_territoire'] ?: null);
+        $this->form->code_zonesante = '';
+        unset($this->zones);
     }
 
     public function updatingQ(): void
@@ -260,33 +265,7 @@ class Index extends Component
         $this->resetPage();
     }
 
-    /* -------------------------------------------
-     | Validation rules
-     ------------------------------------------- */
-    private function incidentRules(): array
-    {
-        return [
-            'form.survivant_id' => ['nullable', 'uuid', Rule::exists('survivants', 'id')],
-
-            'form.date_incident' => ['required', 'date', 'before_or_equal:today'],
-            'form.severite' => ['required', Rule::in($this->severityOptions)],
-            'form.statut_incident' => ['required', Rule::in(['En attente', 'Validé', 'Cloturée', 'Archivé'])],
-
-            'form.auteur_presume' => ['nullable', 'string', 'max:255'],
-
-            'form.code_province' => ['required', 'string', Rule::exists('provinces', 'code_province')],
-            'form.code_territoire' => ['nullable', 'string', Rule::exists('territoires', 'code_territoire')],
-            'form.code_zonesante' => ['nullable', 'string', Rule::exists('zonesantes', 'code_zonesante')],
-
-            'form.localite' => ['nullable', 'string', 'max:255'],
-            'form.source_info' => ['nullable', 'string', 'max:255'],
-            'form.description_faits' => ['nullable', 'string'],
-
-            'form.confidentiality_level' => ['required', Rule::in($this->confidentialityOptions)],
-
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
-        ];
-    }
+    // incidentRules removed
 
     /* -------------------------------------------
      | UI Actions (Create/Edit)
@@ -302,27 +281,9 @@ class Index extends Component
             ? ($this->f_province ?: '')
             : ($this->user()->code_province ?? '');
 
-        $this->form = [
-            'survivant_id' => null,
-
-            'date_incident' => now()->toDateString(),
-            'severite' => 'Faible',
-            'statut_incident' => 'En attente',
-            'auteur_presume' => '',
-
-            'code_province' => $province,
-            'code_territoire' => '',
-            'code_zonesante' => '',
-
-            'localite' => '',
-            'source_info' => '',
-            'description_faits' => '',
-
-            'confidentiality_level' => 'Standard',
-        ];
-
-        $this->loadTerritoires($this->form['code_province'] ?: null);
-        $this->zones = [];
+        $this->form->reset();
+        $this->form->date_incident = now()->toDateString();
+        $this->form->code_province = $province;
 
         $this->showModal = true;
     }
@@ -342,27 +303,7 @@ class Index extends Component
         $this->editing = true;
         $this->editingId = $id;
 
-        $this->form = [
-            'survivant_id' => $incident->survivant_id,
-
-            'date_incident' => optional($incident->date_incident)->toDateString(),
-            'severite' => $incident->severite ?? 'Faible',
-            'statut_incident' => $incident->statut_incident ?? 'En attente',
-            'auteur_presume' => $incident->auteur_presume ?? '',
-
-            'code_province' => $incident->code_province ?? '',
-            'code_territoire' => $incident->code_territoire ?? '',
-            'code_zonesante' => $incident->code_zonesante ?? '',
-
-            'localite' => $incident->localite ?? '',
-            'source_info' => $incident->source_info ?? '',
-            'description_faits' => $incident->description_faits ?? '',
-
-            'confidentiality_level' => $incident->confidentiality_level ?? 'Standard',
-        ];
-
-        $this->loadTerritoires($this->form['code_province'] ?: null);
-        $this->loadZones($this->form['code_territoire'] ?: null);
+        $this->form->setIncident($incident);
 
         $this->showModal = true;
     }
@@ -372,11 +313,15 @@ class Index extends Component
      ------------------------------------------- */
     public function save(): void
     {
-        $this->validate($this->incidentRules());
+        $this->form->validate();
+
+        $this->validate([
+             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+        ]);
 
         // Province forcée pour non superadmin
         if (!$this->isSuperAdmin()) {
-            $this->form['code_province'] = $this->user()->code_province;
+            $this->form->code_province = $this->user()->code_province;
         }
 
         // try {
@@ -389,7 +334,7 @@ class Index extends Component
 
             $this->incidentService->update(
                 incident: $incident,
-                payload: $this->form,
+                payload: $this->form->all(),
                 photo: $this->photo,
                 actor: $this->user(),
                 ipAddress: request()->ip()
@@ -402,7 +347,7 @@ class Index extends Component
 
         // Create
         $created = $this->incidentService->create(
-            payload: $this->form,
+            payload: $this->form->all(),
             photo: $this->photo,
             actor: $this->user(),
             ipAddress: request()->ip()
@@ -449,7 +394,6 @@ class Index extends Component
         $this->assignIncidentId = $incidentId;
         $this->assignTo = $incident->assigned_to ? (string)$incident->assigned_to : null;
 
-        $this->loadSuperviseursForProvince($incident->code_province);
         $this->showAssignModal = true;
     }
 
@@ -700,15 +644,8 @@ class Index extends Component
             ->orderByDesc('incidents.date_incident')
             ->paginate($this->perPage);
 
-        $survivants = Survivant::query()
-            ->select('id', 'code_survivant', 'full_name')
-            ->orderByDesc('code_survivant')
-            ->limit(200)
-            ->get();
-
         return view('livewire.pages.incidents.index', [
             'incidents' => $incidents,
-            'survivants' => $survivants,
             'statuses' => ['En attente', 'Validé', 'Cloturée', 'Archivé'],
         ]);
     }
