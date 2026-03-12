@@ -21,12 +21,11 @@ class NewAccountPendingActivationNotification extends Notification
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Nouveau compte en attente d’activation')
-            ->greeting('Bonjour,')
-            ->line('Un nouvel utilisateur vient de créer un compte et attend l’activation.')
-            ->line('Nom : ' . $this->newUser->name)
-            ->line('Email : ' . $this->newUser->email)
-            ->action('Gérer les utilisateurs', url('/users'))
-            ->line('Merci.');
+            ->subject('Nouveau compte en attente d’activation — SALAMA')
+            ->view('emails.new-account-pending-activation-html', [
+                'adminName' => $notifiable->name,
+                'newUser'   => $this->newUser,
+                'manageUrl' => url('/users'),
+            ]);
     }
 }
