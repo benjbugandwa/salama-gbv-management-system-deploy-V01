@@ -19,7 +19,7 @@
     </svg>
 
     <div class="leading-tight">
-        <div class="font-bold tracking-tight {{ $text }}">GBV MIS</div>
-        <div class="text-xs {{ $muted }}">Projet Mukwege</div>
+        <div class="font-bold tracking-tight {{ $text }}">SALAMA</div>
+        <div class="text-xs {{ $muted }}">Développé par RFD</div>
     </div>
 </div>

@@ -15,5 +15,5 @@
     $file = $map[$variant] ?? $map['main'];
 @endphp
 
-<img src="{{ asset('images/logo/' . $file) }}" alt="GBV MIS Logo" style="height: {{ $size }}px;"
+<img src="{{ asset('images/logo/' . $file) }}" alt="SALAMA" style="height: {{ $size }}px;"
     class="object-contain" />

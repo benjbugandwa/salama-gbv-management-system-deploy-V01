@@ -18,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Global middleware
         $middleware->append(\App\Http\Middleware\SetLocale::class);
+
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
