@@ -12,7 +12,7 @@
     <div class="min-h-screen flex items-center justify-center p-6">
         <div class="w-full max-w-lg bg-white border rounded-2xl shadow-sm p-8 text-center">
             <div class="flex justify-center mb-4">
-                <img src="{{ asset('images/logo/logo.png') }}" alt="SALAMA" class="h-12">
+                <img src="{{ asset('images/logo/logo-main_removebg.png') }}" alt="SALAMA" class="h-12">
             </div>
 
             <div class="text-sm text-gray-500">SALAMA</div>
