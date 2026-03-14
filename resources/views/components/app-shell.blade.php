@@ -92,6 +92,10 @@
                     <x-nav-link href="{{ route('profile') }}" :active="request()->routeIs('profile')" icon="user-pen">
                         Mon profil
                     </x-nav-link>
+
+                    <x-nav-link href="{{ route('about_us') }}" :active="request()->routeIs('about_us')" icon="user-pen">
+                        A propos de SALAMA
+                    </x-nav-link>
                 </nav>
             </div>
         </aside>
@@ -135,6 +139,10 @@
                             @click="close()">Performance superviseurs</x-nav-link>
                         <x-nav-link href="{{ route('profile') }}" :active="false" @click="close()">Mon
                             profil</x-nav-link>
+
+                        <x-nav-link href="{{ route('about_us') }}" :active="false" @click="close()">A propos de
+                            SALAMA</x-nav-link>
+
 
                     </nav>
 

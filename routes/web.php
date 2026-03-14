@@ -25,6 +25,14 @@ Route::get('/', function () {
     return view('landing');
 })->name('landing');
 
+Route::get('/a-propos', function () {
+    return view('about');
+})->name('about');
+
+Route::get('/a-propos-nous', function () {
+    return view('about_us');
+})->name('about_us');
+
 Route::get('/phpinfo', function () {
     phpinfo();
 });
