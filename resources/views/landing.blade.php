@@ -56,7 +56,14 @@
                         class="h-10 px-4 flex items-center rounded-lg bg-[#1B4D8C] text-white text-sm font-semibold hover:opacity-95">
                         {{ __('app.nav.register') }}
                     </a>
+
+
                 @endauth
+
+                <a href="{{ route('about_us') }}"
+                    class="h-10 px-4 flex items-center rounded-lg bg-[#1B4D8C] text-white text-sm font-semibold hover:opacity-95">
+                    A propos de SALAMA
+                </a>
             </div>
 
 

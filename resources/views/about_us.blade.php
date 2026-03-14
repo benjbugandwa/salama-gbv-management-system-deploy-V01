@@ -115,7 +115,37 @@
                     </div>
 
 
-                    <section class="py-16 bg-white">
+                    
+
+
+
+
+                   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    <div class="mt-6 text-sm text-gray-600">
+                        <span class="font-semibold">{{ __('app.hero.process_label') }}</span>
+                        {{ __('app.hero.process_text') }}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <section class="py-16 bg-white">
                         <div class="container mx-auto px-6">
                             <h2 class="text-3xl font-semibold text-center mb-12">Pourquoi adopter SALAMA ?</h2>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -153,13 +183,19 @@
 
 
 
-                    <section class="bg-gray-50 border-t">
+
+
+ 
+ 
+ 
+        <section class="bg-white">
                         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-14">
+                            
 
                             <div
                                 class="rounded-2xl border border-gray-200 bg-white p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
 
-                                <div>
+                                <div >
                                     <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">
 
                                     </div>
@@ -248,26 +284,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    <div class="mt-6 text-sm text-gray-600">
-                        <span class="font-semibold">{{ __('app.hero.process_label') }}</span>
-                        {{ __('app.hero.process_text') }}
-                    </div>
-                </div>
-            </div>
-        </section>
 
         {{-- FEATURES --}}
         <section class="bg-white">
